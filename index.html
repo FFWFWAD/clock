@@ -1,0 +1,243 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>禁閉區考試系統</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+TC:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #050000; /* 極致黑 */
+      --panel: #0f0f0f; /* 深灰色面板 */
+      --border: #330000; /* 深紅邊框 */
+      --accent: #ff0000; /* 警示紅 */
+      --accent2: #ff4d4d; /* 亮紅 */
+      --green: #00ff41; /* 駭客綠 */
+      --purple: #ff00ff; /* 霓虹紫 */
+      --text: #ffffff;
+      --dim: #666666; /* 灰暗文字 */
+      /* 強烈紅光特效 */
+      --glow: 0 0 10px rgba(255, 0, 0, 0.8), 0 0 20px rgba(255, 0, 0, 0.5), 0 0 40px rgba(255, 0, 0, 0.2);
+      --glow-text: 0 0 15px rgba(255, 0, 0, 0.9);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans TC', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* ── 背景雷射光效果 ── */
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background: 
+        linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,0,0,0.05) 3px, transparent 4px);
+    }
+
+    /* 中央垂直雷射 */
+    #canvas-container::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 2px;
+      height: 100%;
+      background: var(--accent);
+      box-shadow: 0 0 20px var(--accent);
+      transform: translateX(-50%);
+      opacity: 0.4;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 25px;
+      padding: 32px 16px;
+      width: min(850px, 96vw);
+    }
+
+    /* ── MODE SWITCHER ── */
+    .mode-switcher {
+      display: flex;
+      border: 2px solid var(--border);
+      background: black;
+      border-radius: 4px;
+    }
+    .mode-btn {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.8rem;
+      padding: 10px 25px;
+      border: none;
+      background: transparent;
+      color: var(--dim);
+      cursor: pointer;
+      letter-spacing: 0.2em;
+    }
+    .mode-btn.active {
+      color: var(--accent);
+      background: rgba(255, 0, 0, 0.15);
+      text-shadow: var(--glow-text);
+    }
+
+    /* ── CLOCK (仿造圖片中的巨大紅字) ── */
+    .date-line {
+      font-family: 'Orbitron', monospace;
+      color: var(--accent);
+      letter-spacing: 0.3em;
+      text-shadow: var(--glow-text);
+    }
+    .digital {
+      display: flex;
+      gap: 5px;
+      background: rgba(0,0,0,0.8);
+      padding: 20px;
+      border: 4px solid #1a1a1a;
+      box-shadow: inset 0 0 20px #000;
+    }
+    .d {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(3rem, 15vw, 10rem);
+      color: var(--accent);
+      text-shadow: var(--glow);
+      line-height: 0.9;
+    }
+    .colon {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(2.5rem, 12vw, 8rem);
+      color: var(--accent);
+      text-shadow: var(--glow);
+      animation: blink 1s step-end infinite;
+    }
+
+    /* ── PANEL ── */
+    .exam-panel {
+      width: 100%;
+      background: rgba(15, 15, 15, 0.9);
+      border-top: 2px solid var(--accent);
+      border-bottom: 2px solid var(--accent);
+      padding: 25px;
+    }
+    .exam-title {
+      font-family: 'Orbitron', monospace;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    /* ── COUNTDOWN ── */
+    .countdown-time {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(3rem, 15vw, 7rem);
+      color: var(--accent2);
+      text-shadow: var(--glow);
+    }
+    
+    .countdown-bar-wrap {
+      background: #200;
+      height: 10px;
+      border: 1px solid var(--border);
+    }
+    .countdown-bar {
+      background: linear-gradient(90deg, #900, #f00);
+      box-shadow: 0 0 15px #f00;
+    }
+
+    /* ── 模擬考特別色 ── */
+    .mode-btn.active[data-mode="mock"], .exam-title.mock {
+      color: var(--purple);
+      text-shadow: 0 0 10px var(--purple);
+    }
+
+    /* 動畫：掃描線 */
+    @keyframes scan {
+      0% { top: -100%; }
+      100% { top: 100%; }
+    }
+    .scanline {
+      position: absolute;
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 0, 0, 0.1);
+      top: 0;
+      z-index: 2;
+      animation: scan 8s linear infinite;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="canvas-container">
+  <canvas id="laser-canvas"></canvas>
+  <div class="scanline"></div>
+</div>
+
+<div class="container">
+  <div class="mode-switcher">
+    <button class="mode-btn active" data-mode="monthly" id="btnMonthly">LVL 1: NORMAL</button>
+    <button class="mode-btn" data-mode="mock" id="btnMock">LVL 2: MOCK</button>
+  </div>
+  </div>
+
+<script>
+  /* JS 部分請保留你原本的所有邏輯 (PERIODS, MOCK_SCHEDULE, tick 等)。
+    只需將最後的「櫻花動畫」換成下方的「雷射/粒子動畫」：
+  */
+
+  const canvas = document.getElementById('laser-canvas');
+  const ctx = canvas.getContext('2d');
+  let width, height;
+
+  function initCanvas() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  }
+
+  // 繪製背景紅線
+  function drawLasers() {
+    ctx.clearRect(0, 0, width, height);
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.2)';
+    ctx.lineWidth = 1;
+
+    // 繪製對角雷射
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(width, height);
+    ctx.moveTo(width, 0); ctx.lineTo(0, height);
+    ctx.stroke();
+
+    // 隨機閃爍粒子
+    for(let i=0; i<20; i++) {
+        ctx.fillStyle = Math.random() > 0.9 ? '#ff0000' : '#330000';
+        ctx.fillRect(Math.random()*width, Math.random()*height, 2, 2);
+    }
+    requestAnimationFrame(drawLasers);
+  }
+
+  window.addEventListener('resize', initCanvas);
+  initCanvas();
+  drawLasers();
+
+  /* 請在此處貼上你原本 index.html 內從 
+    // 月考資料 到 setInterval(tick, 1000); 
+    的所有程式碼 
+  */
+</script>
+</body>
+</html>
