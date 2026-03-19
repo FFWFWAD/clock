@@ -6,21 +6,20 @@
   <title>禁閉區考試系統</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+TC:wght@300;400&display=swap" rel="stylesheet" />
   <style>
+    /* 基礎重置與變數設定 */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #050000; /* 極致黑 */
-      --panel: #0f0f0f; /* 深灰色面板 */
-      --border: #330000; /* 深紅邊框 */
-      --accent: #ff0000; /* 警示紅 */
-      --accent2: #ff4d4d; /* 亮紅 */
-      --green: #00ff41; /* 駭客綠 */
-      --purple: #ff00ff; /* 霓虹紫 */
+      --bg: #050000;         /* 極致黑背景 */
+      --panel: #0d0d0d;      /* 面板深灰色 */
+      --border: #440000;     /* 深紅邊框 */
+      --accent: #ff0000;     /* 警示紅 */
+      --accent2: #ff4d4d;    /* 亮紅文字 */
+      --green: #00ff41;      /* 駭客綠 */
+      --purple: #ff00ff;     /* 霓虹紫 */
       --text: #ffffff;
-      --dim: #666666; /* 灰暗文字 */
-      /* 強烈紅光特效 */
-      --glow: 0 0 10px rgba(255, 0, 0, 0.8), 0 0 20px rgba(255, 0, 0, 0.5), 0 0 40px rgba(255, 0, 0, 0.2);
-      --glow-text: 0 0 15px rgba(255, 0, 0, 0.9);
+      --dim: #555555;        /* 暗色文字 */
+      --glow: 0 0 15px rgba(255, 0, 0, 0.8), 0 0 30px rgba(255, 0, 0, 0.4);
     }
 
     body {
@@ -32,212 +31,456 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
+      overflow: hidden; /* 防止滾動條破壞氛圍 */
     }
 
-    /* ── 背景雷射光效果 ── */
+    /* ── 背景特效：雷射網格與掃描線 ── */
     #canvas-container {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0; width: 100%; height: 100%;
       z-index: 0;
-      background: 
-        linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
-        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,0,0,0.05) 3px, transparent 4px);
+      background: radial-gradient(circle at center, #1a0000 0%, #000 100%);
     }
 
-    /* 中央垂直雷射 */
-    #canvas-container::after {
-      content: '';
+    /* 模擬老舊螢幕的水平橫紋 */
+    .scanline {
       position: absolute;
-      left: 50%;
-      top: 0;
-      width: 2px;
-      height: 100%;
-      background: var(--accent);
-      box-shadow: 0 0 20px var(--accent);
-      transform: translateX(-50%);
-      opacity: 0.4;
+      width: 100%; height: 100%;
+      background: linear-gradient(to bottom, transparent 50%, rgba(255,0,0,0.05) 51%);
+      background-size: 100% 4px;
+      z-index: 1;
+      pointer-events: none;
     }
 
     .container {
       position: relative;
-      z-index: 1;
+      z-index: 2;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 25px;
+      gap: 20px;
       padding: 32px 16px;
       width: min(850px, 96vw);
     }
 
-    /* ── MODE SWITCHER ── */
+    /* ── 模式切換器 ── */
     .mode-switcher {
       display: flex;
       border: 2px solid var(--border);
-      background: black;
+      background: #000;
       border-radius: 4px;
+      overflow: hidden;
     }
     .mode-btn {
       font-family: 'Orbitron', monospace;
       font-size: 0.8rem;
-      padding: 10px 25px;
+      padding: 10px 20px;
       border: none;
       background: transparent;
       color: var(--dim);
       cursor: pointer;
-      letter-spacing: 0.2em;
+      transition: 0.3s;
     }
-    .mode-btn.active {
-      color: var(--accent);
-      background: rgba(255, 0, 0, 0.15);
-      text-shadow: var(--glow-text);
-    }
+    .mode-btn.active[data-mode="monthly"] { color: var(--accent); background: rgba(255,0,0,0.2); text-shadow: var(--glow); }
+    .mode-btn.active[data-mode="mock"] { color: var(--purple); background: rgba(255,0,255,0.1); text-shadow: 0 0 10px var(--purple); }
 
-    /* ── CLOCK (仿造圖片中的巨大紅字) ── */
-    .date-line {
-      font-family: 'Orbitron', monospace;
-      color: var(--accent);
-      letter-spacing: 0.3em;
-      text-shadow: var(--glow-text);
-    }
+    /* ── 數位時鐘樣式 ── */
+    .date-line { font-family: 'Orbitron', monospace; font-size: 1rem; color: var(--accent); letter-spacing: 0.3em; margin-bottom: 5px; }
     .digital {
       display: flex;
+      align-items: center;
+      justify-content: center;
       gap: 5px;
-      background: rgba(0,0,0,0.8);
+      background: #000;
       padding: 20px;
-      border: 4px solid #1a1a1a;
-      box-shadow: inset 0 0 20px #000;
+      border: 3px solid #1a1a1a;
+      box-shadow: inset 0 0 30px #000, 0 0 20px rgba(255,0,0,0.1);
     }
     .d {
       font-family: 'Orbitron', monospace;
       font-weight: 900;
-      font-size: clamp(3rem, 15vw, 10rem);
+      font-size: clamp(3rem, 13vw, 8.5rem);
       color: var(--accent);
       text-shadow: var(--glow);
       line-height: 0.9;
     }
     .colon {
-      font-family: 'Orbitron', monospace;
-      font-size: clamp(2.5rem, 12vw, 8rem);
+      font-size: clamp(2rem, 9vw, 6rem);
       color: var(--accent);
       text-shadow: var(--glow);
       animation: blink 1s step-end infinite;
+      padding-bottom: 10px;
     }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
-    /* ── PANEL ── */
+    /* ── 考試資訊面板 ── */
     .exam-panel {
       width: 100%;
-      background: rgba(15, 15, 15, 0.9);
-      border-top: 2px solid var(--accent);
-      border-bottom: 2px solid var(--accent);
-      padding: 25px;
-    }
-    .exam-title {
-      font-family: 'Orbitron', monospace;
-      color: var(--accent);
-      text-transform: uppercase;
-    }
-
-    /* ── COUNTDOWN ── */
-    .countdown-time {
-      font-family: 'Orbitron', monospace;
-      font-size: clamp(3rem, 15vw, 7rem);
-      color: var(--accent2);
-      text-shadow: var(--glow);
-    }
-    
-    .countdown-bar-wrap {
-      background: #200;
-      height: 10px;
+      background: rgba(10, 0, 0, 0.9);
       border: 1px solid var(--border);
+      border-top: 3px solid var(--accent);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
     }
-    .countdown-bar {
-      background: linear-gradient(90deg, #900, #f00);
-      box-shadow: 0 0 15px #f00;
-    }
+    .exam-header { display: flex; justify-content: space-between; align-items: center; }
+    .exam-title { font-family: 'Orbitron', monospace; color: var(--accent); letter-spacing: 0.2em; font-size: 0.9rem; }
+    .exam-title.mock { color: var(--purple); }
 
-    /* ── 模擬考特別色 ── */
-    .mode-btn.active[data-mode="mock"], .exam-title.mock {
-      color: var(--purple);
-      text-shadow: 0 0 10px var(--purple);
-    }
+    /* 開關切換按鈕 */
+    .toggle-wrap { display: flex; align-items: center; gap: 10px; color: var(--dim); font-size: 0.8rem; cursor: pointer; }
+    .toggle { position: relative; width: 40px; height: 20px; background: #220000; border-radius: 10px; }
+    .toggle input { display: none; }
+    .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #550000; border-radius: 50%; transition: 0.3s; }
+    input:checked + .toggle-thumb { transform: translateX(20px); background: var(--accent); box-shadow: 0 0 10px var(--accent); }
 
-    /* 動畫：掃描線 */
-    @keyframes scan {
-      0% { top: -100%; }
-      100% { top: 100%; }
-    }
-    .scanline {
-      position: absolute;
-      width: 100%;
-      height: 10px;
-      background: rgba(255, 0, 0, 0.1);
-      top: 0;
-      z-index: 2;
-      animation: scan 8s linear infinite;
-      pointer-events: none;
-    }
+    /* 時間與天數選擇按鈕 (Pills) */
+    .pb, .db { font-family: 'Orbitron', monospace; background: transparent; border: 1px solid var(--border); color: var(--dim); padding: 5px 10px; cursor: pointer; font-size: 0.7rem; }
+    .db.active { border-color: var(--accent); color: var(--accent); background: rgba(255,0,0,0.1); }
+    .pb.active-purple { border-color: var(--purple); color: var(--purple); }
+
+    /* ── 倒數計時區塊 ── */
+    .countdown-box { display: none; flex-direction: column; align-items: center; gap: 10px; padding: 15px; border: 1px solid rgba(255,0,0,0.2); background: rgba(20,0,0,0.5); }
+    .countdown-box.visible { display: flex; }
+    .countdown-label { font-size: 0.8rem; color: var(--dim); font-family: 'Orbitron'; }
+    .countdown-time { font-family: 'Orbitron', monospace; font-size: clamp(2.5rem, 12vw, 6rem); color: var(--accent2); text-shadow: var(--glow); line-height: 1; }
+    .cd { display: inline-block; width: 0.75em; text-align: center; }
+    
+    /* 進度條樣式 */
+    .countdown-bar-wrap { width: 100%; height: 6px; background: #200; border-radius: 3px; overflow: hidden; }
+    .countdown-bar { height: 100%; background: linear-gradient(90deg, #600, #f00); box-shadow: 0 0 10px #f00; transition: width 1s linear; }
+
+    .status-off { text-align: center; color: var(--dim); font-size: 0.8rem; padding: 10px; border: 1px dashed var(--border); }
+    .subject-badge { display: none; color: var(--purple); font-family: 'Orbitron'; margin-bottom: 5px; font-size: 1.2rem; text-shadow: 0 0 10px var(--purple); }
+    .subject-badge.visible { display: block; }
+
+    /* 緊急狀態動畫 (剩餘 5 分鐘) */
+    .urgent { animation: alarm 0.5s ease infinite alternate; }
+    @keyframes alarm { from { opacity: 1; } to { opacity: 0.5; color: #fff; text-shadow: 0 0 20px #f00; } }
   </style>
 </head>
 <body>
 
 <div id="canvas-container">
-  <canvas id="laser-canvas"></canvas>
+  <canvas id="bg-canvas"></canvas>
   <div class="scanline"></div>
 </div>
 
 <div class="container">
   <div class="mode-switcher">
-    <button class="mode-btn active" data-mode="monthly" id="btnMonthly">LVL 1: NORMAL</button>
-    <button class="mode-btn" data-mode="mock" id="btnMock">LVL 2: MOCK</button>
+    <button class="mode-btn active" data-mode="monthly" id="btnMonthly">PROTOCOL: MONTHLY</button>
+    <button class="mode-btn" data-mode="mock" id="btnMock">PROTOCOL: MOCK</button>
   </div>
+
+  <div class="date-line" id="dateLine">YYYY · MM · DD</div>
+
+  <div class="digital">
+    <span class="d" id="h0">0</span><span class="d" id="h1">0</span>
+    <span class="colon">:</span>
+    <span class="d" id="m0">0</span><span class="d" id="m1">0</span>
+    <span class="colon">:</span>
+    <span class="d" id="s0">0</span><span class="d" id="s1">0</span>
   </div>
+
+  <div class="exam-panel" id="panelMonthly">
+    <div class="exam-header">
+      <div class="exam-title">STATUS: MONITORING</div>
+      <label class="toggle-wrap">
+        <input type="checkbox" id="examToggle">
+        <div class="toggle"><div class="toggle-thumb"></div></div>
+        ACTIVE
+      </label>
+    </div>
+    <div id="examControls" style="display:none; flex-direction:column; gap:10px;">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <span style="font-size:0.7rem; color:var(--dim)">LIMIT:</span>
+        <div id="durationBtns"></div>
+      </div>
+      <div class="countdown-box" id="countdownBox">
+        <div class="countdown-label" id="countdownLabel">SEC_REMAINING</div>
+        <div class="countdown-time" id="countdownTime">
+          <span class="cd" id="cd0">0</span><span class="cd" id="cd1">0</span>
+          <span class="colon">:</span>
+          <span class="cd" id="cd2">0</span><span class="cd" id="cd3">0</span>
+        </div>
+        <div id="breakMsg" style="display:none; font-size:3rem; font-family:'Orbitron';">REST</div>
+        <div class="countdown-bar-wrap"><div class="countdown-bar" id="countdownBar" style="width:100%"></div></div>
+        <div id="periodInfo" style="font-size:0.7rem; color:var(--dim); margin-top:5px;"></div>
+      </div>
+    </div>
+    <div class="status-off" id="statusOff">SYSTEM IDLE - WAITING FOR INPUT</div>
+  </div>
+
+  <div class="exam-panel" id="panelMock" style="display:none;">
+    <div class="exam-header">
+      <div class="exam-title mock">STATUS: EVALUATION</div>
+      <label class="toggle-wrap">
+        <input type="checkbox" id="mockToggle">
+        <div class="toggle"><div class="toggle-thumb"></div></div>
+        ACTIVE
+      </label>
+    </div>
+    <div id="mockDayRow" style="display:flex; gap:10px; margin-bottom:10px;">
+      <button class="pb active-purple" id="btnDay1">DAY_01</button>
+      <button class="pb" id="btnDay2">DAY_02</button>
+    </div>
+    <div class="subject-badge" id="subjectBadge">SUBJECT: <span id="subjectName">—</span></div>
+    <div class="countdown-box" id="mockCountdownBox">
+      <div class="countdown-time" id="mockTime">
+        <span class="cd" id="mcd0">0</span><span class="cd" id="mcd1">0</span>
+        <span class="colon">:</span>
+        <span class="cd" id="mcd2">0</span><span class="cd" id="mcd3">0</span>
+      </div>
+      <div id="mockBreakMsg" style="display:none; font-size:3rem; font-family:'Orbitron';">REST</div>
+      <div class="countdown-bar-wrap"><div class="countdown-bar" id="mockBar" style="width:100%"></div></div>
+      <div id="mockInfo" style="font-size:0.7rem; color:var(--dim); margin-top:5px;"></div>
+    </div>
+    <div class="status-off" id="mockStatusOff">SYSTEM IDLE - WAITING FOR INPUT</div>
+  </div>
+</div>
 
 <script>
-  /* JS 部分請保留你原本的所有邏輯 (PERIODS, MOCK_SCHEDULE, tick 等)。
-    只需將最後的「櫻花動畫」換成下方的「雷射/粒子動畫」：
-  */
+  /* ──────────────────────────────────────────────────────────────────
+     1. 資料定義 (月考與模擬考時程)
+  ────────────────────────────────────────────────────────────────── */
+  const PERIODS = [
+    { label:'1', start:[8,10] }, { label:'2', start:[9,10] },
+    { label:'3', start:[10,10] }, { label:'4', start:[11,10] },
+    { label:'5', start:[13,5] }, { label:'6', start:[14,5] }, { label:, start:[15,10] }
+  ];
+  
+  // 每節課可選擇的考試長度
+  const PERIOD_DURATIONS = [[50,80,100],[50,80,100],[50,80,100],[50],[50,80,100],[50,80,100],[50]];
 
-  const canvas = document.getElementById('laser-canvas');
-  const ctx = canvas.getContext('2d');
-  let width, height;
+  // 模擬考固定時程
+  const MOCK_SCHEDULE = {
+    day1: [
+      { subject:'國文', start:[8,20], duration:100 },
+      { subject:'英文', start:[10,20], duration:100 },
+      { subject:'專一', start:[13,10], duration:100 }
+    ],
+    day2: [
+      { subject:'數學', start:[8,20], duration:80 },
+      { subject:'專二', start:[10,20], duration:100 }
+    ]
+  };
 
-  function initCanvas() {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
-  }
+  // 全域狀態
+  let currentMode = 'monthly', examOn = false, selectedPeriod = null, selectedDuration = 50, mockOn = false, mockDay = 'day1';
 
-  // 繪製背景紅線
-  function drawLasers() {
-    ctx.clearRect(0, 0, width, height);
-    ctx.strokeStyle = 'rgba(255, 0, 0, 0.2)';
-    ctx.lineWidth = 1;
+  /* ──────────────────────────────────────────────────────────────────
+     2. 核心時鐘與排程邏輯
+  ────────────────────────────────────────────────────────────────── */
+  function pad(n){ return String(n).padStart(2,'0'); }
+  
+  // 每秒執行的主函式
+  function tick() {
+    const now = new Date();
+    const h = pad(now.getHours()), m = pad(now.getMinutes()), s = pad(now.getSeconds());
+    
+    // 更新主時鐘顯示
+    document.getElementById('h0').textContent = h[0]; document.getElementById('h1').textContent = h[1];
+    document.getElementById('m0').textContent = m[0]; document.getElementById('m1').textContent = m[1];
+    document.getElementById('s0').textContent = s[0]; document.getElementById('s1').textContent = s[1];
+    document.getElementById('dateLine').textContent = `${now.getFullYear()} · ${pad(now.getMonth()+1)} · ${pad(now.getDate())}`;
 
-    // 繪製對角雷射
-    ctx.beginPath();
-    ctx.moveTo(0, 0); ctx.lineTo(width, height);
-    ctx.moveTo(width, 0); ctx.lineTo(0, height);
-    ctx.stroke();
-
-    // 隨機閃爍粒子
-    for(let i=0; i<20; i++) {
-        ctx.fillStyle = Math.random() > 0.9 ? '#ff0000' : '#330000';
-        ctx.fillRect(Math.random()*width, Math.random()*height, 2, 2);
+    // 處理月考倒數
+    if (examOn) {
+      const nowSec = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
+      const correct = detectPeriod(nowSec);
+      if (correct !== selectedPeriod) selectPeriod(correct);
+      updateMonthly(nowSec);
     }
-    requestAnimationFrame(drawLasers);
+
+    // 處理模擬考倒數
+    if (mockOn) updateMock(now);
   }
 
-  window.addEventListener('resize', initCanvas);
-  initCanvas();
-  drawLasers();
+  // 自動偵測當前應該是第幾節課
+  function detectPeriod(nowSec) {
+    for (let i=0; i<PERIODS.length; i++) {
+      const s = PERIODS[i].start[0]*3600 + PERIODS[i].start[1]*60;
+      if (nowSec >= s && nowSec < s + selectedDuration*60) return i;
+    }
+    for (let i=0; i<PERIODS.length; i++) {
+      if (nowSec < PERIODS[i].start[0]*3600 + PERIODS[i].start[1]*60) return i;
+    }
+    return PERIODS.length - 1;
+  }
 
-  /* 請在此處貼上你原本 index.html 內從 
-    // 月考資料 到 setInterval(tick, 1000); 
-    的所有程式碼 
-  */
+  function selectPeriod(i) {
+    selectedPeriod = i;
+    rebuildDurationBtns(i);
+    document.getElementById('countdownBox').classList.add('visible');
+  }
+
+  // 動態建立時長按鈕 (50, 80, 100分)
+  function rebuildDurationBtns(idx) {
+    const container = document.getElementById('durationBtns');
+    container.innerHTML = '';
+    const durs = PERIOD_DURATIONS[idx] || [50];
+    durs.forEach(d => {
+      const b = document.createElement('button');
+      b.className = 'db' + (d===selectedDuration ? ' active' : '');
+      b.textContent = d + 'M';
+      b.onclick = () => { selectedDuration = d; rebuildDurationBtns(idx); };
+      container.appendChild(b);
+    });
+  }
+
+  /* ── 月考更新邏輯 ── */
+  function updateMonthly(nowSec) {
+    const p = PERIODS[selectedPeriod];
+    const startSec = p.start[0]*3600 + p.start[1]*60;
+    const endSec = startSec + selectedDuration*60;
+    
+    const cdTimeEl = document.getElementById('countdownTime');
+    const breakEl = document.getElementById('breakMsg');
+    const bar = document.getElementById('countdownBar');
+
+    if (nowSec < startSec) {
+      // 尚未開始 (下課時間)
+      cdTimeEl.style.display = 'none'; breakEl.style.display = 'block';
+      breakEl.textContent = "WAITING";
+      document.getElementById('countdownLabel').textContent = "NEXT: " + pad(p.start[0]) + ":" + pad(p.start[1]);
+      bar.style.width = '0%';
+    } else {
+      // 考試進行中
+      cdTimeEl.style.display = 'flex'; breakEl.style.display = 'none';
+      const rem = endSec - nowSec;
+      if (rem <= 0) {
+        setCDText('cd', '00', '00');
+        bar.style.width = '0%';
+      } else {
+        const mm = pad(Math.floor(rem/60)), ss = pad(rem%60);
+        setCDText('cd', mm, ss);
+        cdTimeEl.classList.toggle('urgent', rem <= 300);
+        bar.style.width = (rem/(selectedDuration*60)*100) + '%';
+      }
+      document.getElementById('countdownLabel').textContent = `PERIOD ${p.label} REMAINING`;
+      document.getElementById('periodInfo').textContent = `${pad(p.start[0])}:${pad(p.start[1])} ~ ${pad(Math.floor(endSec/3600))}:${pad(Math.floor((endSec%3600)/60))}`;
+    }
+  }
+
+  /* ── 模擬考更新邏輯 ── */
+  function updateMock(now) {
+    const nowSec = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
+    const schedule = MOCK_SCHEDULE[mockDay];
+    let current = null;
+
+    // 尋找當前考科
+    for (let item of schedule) {
+      const s = item.start[0]*3600 + item.start[1]*60;
+      const e = s + item.duration*60;
+      if (nowSec < e) { current = item; break; }
+    }
+
+    const timeEl = document.getElementById('mockTime');
+    const breakEl = document.getElementById('mockBreakMsg');
+    const bar = document.getElementById('mockBar');
+
+    if (!current) {
+      timeEl.style.display = 'none'; breakEl.style.display = 'block';
+      breakEl.textContent = "FINISHED";
+      bar.style.width = '0%';
+      return;
+    }
+
+    const sSec = current.start[0]*3600 + current.start[1]*60;
+    const eSec = sSec + current.duration*60;
+
+    document.getElementById('subjectName').textContent = current.subject;
+
+    if (nowSec < sSec) {
+      timeEl.style.display = 'none'; breakEl.style.display = 'block';
+      breakEl.textContent = "REST";
+      bar.style.width = '0%';
+    } else {
+      timeEl.style.display = 'flex'; breakEl.style.display = 'none';
+      const rem = eSec - nowSec;
+      const mm = pad(Math.floor(rem/60)), ss = pad(rem%60);
+      setCDText('mcd', mm, ss);
+      timeEl.classList.toggle('urgent', rem <= 600);
+      bar.style.width = (rem/(current.duration*60)*100) + '%';
+      document.getElementById('mockInfo').textContent = `${pad(current.start[0])}:${pad(current.start[1])} ~ ${pad(Math.floor(eSec/3600))}:${pad(Math.floor((eSec%3600)/60))}`;
+    }
+  }
+
+  // 輔助函式：更新倒數文字
+  function setCDText(prefix, mm, ss) {
+    document.getElementById(prefix+'0').textContent = mm[0];
+    document.getElementById(prefix+'1').textContent = mm[1];
+    document.getElementById(prefix+'2').textContent = ss[0];
+    document.getElementById(prefix+'3').textContent = ss[1];
+  }
+
+  /* ──────────────────────────────────────────────────────────────────
+     3. 事件監聽與 UI 切換
+  ────────────────────────────────────────────────────────────────── */
+  
+  // 模式切換按鈕
+  document.getElementById('btnMonthly').onclick = () => switchMode('monthly');
+  document.getElementById('btnMock').onclick = () => switchMode('mock');
+
+  function switchMode(mode) {
+    currentMode = mode;
+    document.getElementById('btnMonthly').classList.toggle('active', mode==='monthly');
+    document.getElementById('btnMock').classList.toggle('active', mode==='mock');
+    document.getElementById('panelMonthly').style.display = mode==='monthly' ? 'flex' : 'none';
+    document.getElementById('panelMock').style.display = mode==='mock' ? 'flex' : 'none';
+  }
+
+  // 開關與天數切換
+  document.getElementById('examToggle').onchange = (e) => {
+    examOn = e.target.checked;
+    document.getElementById('examControls').style.display = examOn ? 'flex' : 'none';
+    document.getElementById('statusOff').style.display = examOn ? 'none' : 'block';
+    if(examOn) selectPeriod(detectPeriod((new Date()).getHours()*3600 + (new Date()).getMinutes()*60));
+  };
+
+  document.getElementById('mockToggle').onchange = (e) => {
+    mockOn = e.target.checked;
+    document.getElementById('mockStatusOff').style.display = mockOn ? 'none' : 'block';
+    document.getElementById('mockCountdownBox').classList.toggle('visible', mockOn);
+    document.getElementById('subjectBadge').classList.toggle('visible', mockOn);
+  };
+
+  document.getElementById('btnDay1').onclick = () => { mockDay = 'day1'; updateMockUI(); };
+  document.getElementById('btnDay2').onclick = () => { mockDay = 'day2'; updateMockUI(); };
+
+  function updateMockUI() {
+    document.getElementById('btnDay1').classList.toggle('active-purple', mockDay==='day1');
+    document.getElementById('btnDay2').classList.toggle('active-purple', mockDay==='day2');
+  }
+
+  /* ──────────────────────────────────────────────────────────────────
+     4. 背景雷射裝飾 Canvas
+  ────────────────────────────────────────────────────────────────── */
+  const bgCanvas = document.getElementById('bg-canvas');
+  const bgCtx = bgCanvas.getContext('2d');
+  function initBg() {
+    bgCanvas.width = window.innerWidth;
+    bgCanvas.height = window.innerHeight;
+  }
+  function drawBg() {
+    bgCtx.clearRect(0,0,bgCanvas.width, bgCanvas.height);
+    bgCtx.strokeStyle = 'rgba(255, 0, 0, 0.15)';
+    bgCtx.lineWidth = 1;
+    // 繪製中心交叉線
+    bgCtx.beginPath();
+    bgCtx.moveTo(0,0); bgCtx.lineTo(bgCanvas.width, bgCanvas.height);
+    bgCtx.moveTo(bgCanvas.width, 0); bgCtx.lineTo(0, bgCanvas.height);
+    bgCtx.stroke();
+    requestAnimationFrame(drawBg);
+  }
+  window.onresize = initBg;
+  initBg();
+  drawBg();
+
+  // 啟動主時鐘
+  tick();
+  setInterval(tick, 1000);
 </script>
 </body>
 </html>
